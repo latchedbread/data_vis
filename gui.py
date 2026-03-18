@@ -1,0 +1,98 @@
+import tkinter as tk
+from tkinter import messagebox
+from pool_manager import PoolManager
+from graph_plotter import GraphPlotter
+from job import Job
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+class Gui:
+    def __init__(self, window,db_path="stocks.db"):
+        #boilerplate code implemented with ai assistance(as allowed in instructions)
+        self._db_path = db_path
+        self._window = window
+
+        self._window.title("Stock Data Visualizer")
+
+        # Start date
+        tk.Label(window, text="Start Date (YYYY-MM-DD):").pack()
+        self._start_date_entry = tk.Entry(window)
+        self._start_date_entry.pack()
+
+        # End date
+        tk.Label(window, text="End Date (YYYY-MM-DD):").pack()
+        self._end_date_entry = tk.Entry(window)
+        self._end_date_entry.pack()
+
+        # Ticker listbox
+        tk.Label(window, text="Select Tickers:").pack()
+        self._ticker_listbox = tk.Listbox(window, selectmode=tk.MULTIPLE)
+        self._ticker_listbox.pack()
+
+        # Populate tickers
+        for ticker in self._dow_jones_tickers():
+            self._ticker_listbox.insert(tk.END, ticker)
+
+        # Submit button
+        tk.Button(window, text="Submit", command=self._on_submit).pack()
+    
+    def _dow_jones_tickers(self):
+        return [
+            "AAPL", "AMGN", "AXP", "BA", "CAT",
+            "CRM", "CSCO", "CVX", "DIS", "DOW",
+            "GS", "HD", "HON", "IBM", "INTC",
+            "JNJ", "JPM", "KO", "MCD", "MMM",
+            "MRK", "MSFT", "NKE", "PG", "TRV",
+            "UNH", "V", "VZ", "WBA", "WMT"
+        ]
+    
+    def _on_submit(self):
+
+        start_date = self._start_date_entry.get()
+        end_date = self._end_date_entry.get()
+
+        if not self._validate_dates(start_date, end_date):
+            messagebox.showerror("Error", "Invalid date format! Please use YYYY-MM-DD")
+            return
+
+        selected_tickers = [self._ticker_listbox.get(i) for i in self._ticker_listbox.curselection()]
+
+        if not selected_tickers:
+            messagebox.showwarning("Warning", "Please select at least one ticker!")
+            return
+        
+        job_obj_list = [] 
+        
+        for ticker in selected_tickers:
+            job_obj = Job(ticker,start_date, end_date, self._db_path)
+            job_obj_list.append(job_obj)
+        try:
+            pool = PoolManager(job_obj_list)
+            results = pool.pool_operations()
+
+            for result in results:
+                graph = GraphPlotter(result["ticker"], result["plot_df"])
+                graph.graph_displayment()
+                if result["warnings"]:
+                    messagebox.showwarning("Warning", "\n".join(result["warnings"]))
+        except Exception as e:
+            msg = f"An error occurred while processing: {str(e)}"
+            logger.error(msg)
+            messagebox.showerror("Error", msg)
+
+
+    def _validate_dates(self, start_date, end_date):
+        try:
+            datetime.strptime(start_date, "%Y-%m-%d")
+            datetime.strptime(end_date, "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
+
+        
+
+
+
+        
