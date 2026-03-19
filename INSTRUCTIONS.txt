@@ -1,0 +1,231 @@
+﻿Assignment: Data Visualization
+1. System Overview
+The application uses a two-layer architecture:
+Layer
+	Responsibilities
+	Main Process
+	Runs the GUI, validates input, constructs job records, manages the multiprocessing Pool, collects worker results, and performs all plotting.
+	Worker Processes
+	Handle one ticker end-to-end: scrape data, store it, query it, compute a numeric trend line, and return a compact plot-ready DataFrame.
+	Each ticker is processed independently. No worker communicates with another.  All stock data in this assignment comes from the yfinance module which needs to be installed and imported into your solution. Each worker calls  to fetch OHLCV prices for its assigned ticker and date range.
+________________
+
+
+2. GUI Layer
+The GUI is the entry point for all user input. It must:
+* Provide controls for selecting:
+   * Start date
+   * End date
+   * One or more Dow Jones tickers
+* Validate:
+   * Start date ≤ End date
+   * At least one ticker selected
+* Construct a job description for each ticker:
+   * Ticker symbol
+   * Date range
+   * Path to SQLite database
+* Submit all job descriptions to the Pool manager.
+* Display plots and warnings returned by workers.
+Restrictions: The GUI performs no scraping, database operations, or numeric analysis.
+
+Fig. 1:  Shows a sample Matplotlib of a stock ticker
+________________
+
+
+3. Job Construction
+For each selected ticker, the main process creates a job record containing:
+* Ticker symbol
+* Start date
+* End date
+* Database path
+These job records are passed to the multiprocessing Pool.
+________________
+
+
+4. Worker Pipeline (Executed Per Ticker)
+Each worker process handles one ticker from start to finish. All components run inside the same worker process in a fixed sequence. No component is distributed to another process, and no worker hands work to another worker. A worker is a self-contained mini-program that performs all steps for its assigned ticker.
+4.1 Pipeline Responsibilities
+Step
+	Component
+	Responsibility
+	1
+	WebScraper
+	Retrieve OHLCV data for the ticker over the selected date range. Return a DataFrame or an empty DataFrame with a warning.
+	2
+	DatabaseServer
+	Store the scraped DataFrame into a SQLite table for the ticker. Create the table if needed.
+	3
+	DatabaseClient
+	Query the stored closing-price series from SQLite and return it as a numeric list.
+	4
+	NumericTrendAnalyzer
+	Compute a simple linear trend line using deterministic numeric methods (e.g., numpy.polyfit). Assemble a compact DataFrame with index, actual, and trend columns.
+	5
+	Result Packaging
+	Return the ticker symbol, the plot-ready DataFrame, and any warnings back to the main process.
+	4.2 Worker Mini-Program
+The following pseudocode illustrates how all components run inside a single worker process. This clarifies that the worker executes the entire pipeline sequentially for one ticker:
+
+
+def worker(job):
+    # Step 1: Scrape
+    scraped_df, scrape_warning = scrape_data(job.ticker, job.start, job.end)
+
+
+    # Step 2: Store
+    store_warning = store_data(job.db_path, job.ticker, scraped_df)
+
+
+    # Step 3: Query
+    prices, query_warning = query_closing_prices(job.db_path, job.ticker)
+
+
+    # Step 4: Analyze
+    plot_df, analysis_warning = compute_numeric_trend(prices)
+
+
+    # Step 5: Package result
+    warnings = [scrape_warning, store_warning, query_warning, analysis_warning]
+    warnings = [w for w in warnings if w]
+
+
+    return {
+        "ticker": job.ticker,
+        "plot_df": plot_df,
+        "warnings": warnings
+    }
+
+
+This mini-program model is the intended interpretation: one worker = one process = one complete pipeline for one ticker.
+4.3 NumericTrendAnalyzer Component
+The compute_numeric_trend function performs a simple, deterministic numeric analysis to prepare data for plotting. It does not perform model training, does not use machine‑learning libraries, and does not create or fit model objects. Its purpose is to convert the queried closing‑price series into a compact DataFrame that matplotlib can plot directly.
+Responsibilities of compute_numeric_trend
+Responsibility
+	Description
+	Create numeric index
+	Construct a sequential numeric index 0, 1, 2, ..., n-1 corresponding to the order of the closing-price series.
+	Compute linear trend line
+	Use deterministic numeric methods (e.g., numpy.polyfit with degree 1) to compute slope m and intercept b, then generate the trend line trend[i] = m * index[i] + b.
+	Compute optional metrics
+	Compute simple evaluation metrics using direct formulas:
+* Mean Squared Error (MSE)
+* Coefficient of Determination (R²)
+These metrics are optional and may be included in the worker's warnings or result object.
+	Assemble plot-ready DataFrame
+	Construct a compact DataFrame with the following columns:
+* index — numeric index
+* actual — actual closing prices
+* trend — computed linear trend values
+This DataFrame is small, serializable, and ready for matplotlib or seaborn.
+	Return values
+	Return the DataFrame and any warnings (e.g., insufficient data to compute a trend).
+	Reference Implementation of compute_numeric_trend
+
+
+def compute_numeric_trend(prices):
+    import numpy as np
+    import pandas as pd
+
+
+    # Require at least 2 points for a trend line
+    if len(prices) < 2:
+        df = pd.DataFrame({
+            "index": np.arange(len(prices)),
+            "actual": prices,
+            "trend": prices  # fallback: no trend possible
+        })
+        return df, "Not enough data to compute a trend line."
+
+
+    # Numeric index
+    x = np.arange(len(prices))
+
+
+    # Deterministic linear trend (no model training)
+    m, b = np.polyfit(x, prices, 1)
+    trend = m * x + b
+
+
+    # Optional metrics
+    mse = float(np.mean((prices - trend) ** 2))
+    r2 = float(
+        1 - np.sum((prices - trend)**2) /
+        np.sum((prices - np.mean(prices))**2)
+    )
+
+
+    # Assemble plot-ready DataFrame
+    df = pd.DataFrame({
+        "index": x,
+        "actual": prices,
+        "trend": trend
+    })
+
+
+    return df, None  # no warnings
+
+
+This function provides a clear, simple analysis step that fits within the course scope, avoids machine learning, and produces a DataFrame that the main process can plot without further transformation.
+________________
+
+
+5. GraphicPlotter Component (Main Process)
+The plotter receives the DataFrame for each ticker and must:
+* Plot the actual closing-price curve
+* Plot the linear trend line
+* Label axes
+* Add a title
+* Optionally display metrics
+Constraints: No scraping, storage, or numeric analysis.
+Note: This section references an external image in the original assignment.
+________________
+
+
+6. Multiprocessing Pool
+The Pool must:
+* Accept job descriptions from the GUI
+* Assign each job to a worker process
+* Collect worker results
+* Return results to the main process for plotting
+Constraint: The Pool performs no analysis; it only distributes work and gathers results.
+________________
+
+
+7. Efficient Data Transfer
+Workers must return only:
+* Ticker symbol
+* Compact plot-ready DataFrame
+* Warnings
+Large data structures remain inside the worker or database.
+________________
+
+
+8. Error Handling and Logging
+* Each component logs errors related to its own responsibilities.
+* Workers include non-fatal warnings in their results.
+* Failure of one ticker does not affect others.
+ 
+9. Extensibility
+The architecture is designed to support future growth without major redesign. Because each component has a clearly defined responsibility and each worker operates independently, the system can be extended in several directions:
+* Additional numeric analysis methods (e.g., moving averages, smoothing, multi‑window trends)
+* Additional tickers or market indices
+* Alternative data sources or scraping backends
+* Additional visualization styles or multi‑ticker comparison plots
+* Refinements to database schema or caching strategies
+9.1 Acceptable Use of AI Code Generation
+Students may use AI tools to assist with non‑creative, boilerplate, or repetitive coding tasks, provided that the resulting code is:
+* Fully understood by the student
+* Integrated into the student’s own design and structure
+* Documented with comments explaining the student’s understanding
+* Modified as needed to fit the assignment’s architecture
+Acceptable uses include:
+* Generating small helper functions (e.g., date parsing, simple validation)
+* Producing standard library usage examples (e.g., sqlite3 connection patterns)
+* Creating boilerplate GUI code (e.g., Tkinter widget setup)
+* Drafting simple numeric formulas (e.g., MSE or R² calculations)
+Unacceptable uses include:
+* Submitting AI‑generated code that the student cannot explain
+* Allowing AI to design or restructure major components of the pipeline
+* Using AI to bypass the assignment’s required architecture
+* Submitting code that shows no evidence of student understanding or modification
+Students are responsible for the correctness, clarity, and integration of all submitted code, regardless of whether AI tools were used to assist in its creation. This specification may seem intimidating but if you break it up into doing one module per day, it becomes managable.

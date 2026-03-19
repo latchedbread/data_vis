@@ -1,0 +1,62 @@
+﻿1. Grades
+This course is evaluated through weekly exercises and two exams. Each exercise and test submission is scored using two equally weighted criteria:
+1. Correctness (50%) – The program must compile and produce the expected output.
+2. Qualitative Rating (50%) – Each submission is rated on a scale from 0 to 5, based on factors such as clarity, style, robustness, and scalability.
+2. Grading Rubric
+Grade
+	Percentage Range
+	A
+	100% to 94.5%
+	A-
+	Less than 94.5% to 89.5%
+	B+
+	Less than 89.5% to 86.5%
+	B
+	Less than 86.5% to 83.5%
+	B-
+	Less than 83.5% to 79.5%
+	C+
+	Less than 79.5% to 74.5%
+	C
+	Less than 74.5% to 69.5%
+	D+
+	Less than 69.5% to 66.5%
+	D
+	Less than 66.5% to 63.5%
+	D-
+	Less than 63.5% to 59.5%
+	F
+	Less than 59.5% to 0.0%
+	3. Rating Criteria
+This rubric evaluates not only whether your code works, but how well it demonstrates intentional design, conceptual understanding, and adaptability. Each criterion targets a specific aspect of quality—correctness, clarity, robustness, scalability, and more. We reward solutions that move beyond basic functionality and show thoughtful engineering aligned with the problem. Additional ratings will reflect the specific goals of each assignment.
+Each criterion is scored from 0 to 5:
+* 0 = Wrong assignment is submitted or incomplete. No resubmissions allowed.
+* 1 = Code fails to compile or crashes at runtime. Resubmission only authorized by instructor.
+* 2 = Code runs but lacks modularity or does not produce correct results.
+* 3 = Code runs and is modular, but relies on hardcoded values and cannot scale.
+* 4 = Code runs correctly, is modular, and produces scalable results.
+* 5 = Code runs correctly, is modular, scalable, and includes robust error handling.
+Summary Table
+Criterion
+	Description
+	1. Modular
+	Design aligned with the problem’s structure; well-defined modules and intentional organization
+	2. Correctness
+	Accurate results across typical and edge-case inputs; logical consistency and specification alignment
+	3. Clarity & Style
+	Readable, consistent, and well-organized code that reflects conceptual control
+	4. Robustness
+	Predictable behavior under invalid input and edge cases; defensive programming and error handling
+	5. Scalability
+	Generalized design that adapts to larger inputs or new constraints without rewrites
+	Detailed Criteria
+A. Modular
+Modular means breaking a big problem into smaller, self-contained parts that each do one clear job. These parts—called modules or classes—can be built, tested, and understood independently, and then combined to solve the full problem.
+B. Correctness
+At its core, correctness means that the code behaves as intended: it produces the right outputs for the right inputs, handles edge cases gracefully, and adheres to the problem specification. It’s more than just “does it work?”—it’s about trusting that the logic matches the assignment’s expectations.
+C. Clarity & Style
+Clarity means your code (or writing) is easy to read, understand, and follow—even for someone seeing it for the first time. Style is how you express your solution—your formatting, naming conventions, and overall presentation. It’s not about being fancy; it’s about being consistent and intentional.
+D. Robustness
+Robustness is all about how well your code holds up under pressure—unexpected inputs, weird edge cases, or even user mistakes. It means writing programs that don’t just work in ideal conditions, but keep working when things get messy.
+E. Scalability
+Scalability means your solution can grow without breaking down or slowing to a crawl. It’s like designing a backpack that works whether you’re carrying one book or twenty—it still fits, still zips, and doesn’t tear under pressure. Use of hardwired code or magic numbers easily break scaleability as the code has to change under varying conditions.
