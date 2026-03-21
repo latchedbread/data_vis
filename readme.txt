@@ -1,23 +1,23 @@
 Stock Data Visualization - Aidan McCullough
 
 
-Project Design:
+Project Overview:
 
--Statelessness(a previously made error on past assignments):
-    -to make sure for having thread-safety for mulitprocessing,
-        all worker classes(DataBaseServer, NumericAnalyzer, etc) are stateless.
-    -All of the data gets passed directly into methods instead of being stored inside the constructors
+This is a high-preforming multi-threaded stock anaylsis tool that fetches historical data,
+and then stores it inside of a sanitzed SQLite db.
 
+Architectural Design:
+-Non-Blocking Mulithreaded GUI:
+    implementation of the threading module. THe worker thread manages the multiprocessing pool,
+    which keeps the interface responsive and stocks possible errors like Application Not Responding" during heavy data fetching.
 
--Input Validation:
-    -The GUI has strict date validation to catch possible errors by the user before spawning workers.
+-Configuration File:
+    moved all of the hardcoded constants(the tickers) into one seperate file to improve the scalability of this project.
 
+-Sanitation on Database Operations:
+    Added the use of regex based ticker sanitization. This was to protect against any possible SQL injections.I also added a 10 second connection timeout
+    to make sure thread safe concurrent writes to the SQL database.
 
--Pipeline archeticture:
-    -Implemented a "short-circuit" in the worker class to start running right away if the WebScraper doesn't find any data
-    -this ensures no unnessary database operations get carried out
-
-
--Non-Blocking UI:
-    -the graph plotter prepares the figures in the background and calls plt.show() only after the entire job pool
-    -this prefents the Tkinter interface from freezing
+-Stateless Worker Pipeline:
+    To confirm thread safety for multiprocessing, all of the processing classes are stateless(a mistake made on previous exercises). Data gets passed straight into the methods
+    instead of being stored in instance attributes.

@@ -1,0 +1,10 @@
+# Python cache files 
+__pycache__/
+*.pyc
+
+# Local database (we want the code to generate this fresh for anyone who runs it!)
+stocks.db
+
+# Accidental zips 
+Archive.zip
+*.zip
